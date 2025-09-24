@@ -1,8 +1,9 @@
-﻿using Database;
-using Database.Data;
+﻿using Database.Data;
 using Database.Models;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace Studie_Dasboard
@@ -11,6 +12,7 @@ namespace Studie_Dasboard
     {
         private BindingSource bs = new BindingSource();
         private string connString = "Server=localhost;Port=3306;Database=dashboard_db;User Id=root;";
+        private Dictionary<int, string> blokCache; // cache blok names for UI
 
         public Form1()
         {
@@ -19,13 +21,12 @@ namespace Studie_Dasboard
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            // Setup Status ComboBox
+            // Setup ComboBoxes
             cBox.Items.Clear();
             cBox.Items.AddRange(new string[] { "Alle Statusen", "J (Ja)", "N (Nee)", "- (Niet gestart)" });
             cBox.SelectedIndex = 0;
             cBox.SelectedIndexChanged += FilterComboBoxes;
 
-            // Setup Type ComboBox
             typeBox.Items.Clear();
             typeBox.Items.AddRange(new string[] { "Alle Types", "Formatief", "Summatief" });
             typeBox.SelectedIndex = 0;
@@ -34,21 +35,28 @@ namespace Studie_Dasboard
             blokBox.Items.Clear();
             blokBox.Items.Add("Alle Blokken");
 
-            cursussen cursussenDb = new cursussen(connString);
+            // Load blok names from DB once and cache
+            var cursussenDb = new Cursussen(connString);
             var blokken = cursussenDb.GetAllBlokken();
-            foreach (var blok in blokken)
+            blokCache = new Dictionary<int, string>();
+            for (int i = 0; i < blokken.Count; i++)
             {
-                blokBox.Items.Add(blok);
+                int blokId = i + 1; // assuming IDs are sequential
+                blokCache[blokId] = blokken[i];
+                blokBox.Items.Add(blokken[i]);
             }
 
             blokBox.SelectedIndex = 0;
             blokBox.SelectedIndexChanged += FilterComboBoxes;
 
-            // Bind DataGridView initially with all rows
+            // Initial binding
             RefreshGrid("Alle Statusen", "Alle Types", "Alle Blokken");
 
-            dGrid.Columns["Cursus_ID"].Visible = false;
-            dGrid.Columns["Cursus_Type"].Visible = false;
+            // Hide ID columns
+            if (dGrid.Columns["Cursus_ID"] != null)
+                dGrid.Columns["Cursus_ID"].Visible = false;
+            if (dGrid.Columns["Cursus_Type"] != null)
+                dGrid.Columns["Cursus_Type"].Visible = false;
         }
 
         private void FilterComboBoxes(object sender, EventArgs e)
@@ -60,46 +68,90 @@ namespace Studie_Dasboard
             RefreshGrid(selectedStatus, selectedType, selectedBlok);
         }
 
-
-        // Helper method to refresh the grid from database
         private void RefreshGrid(string status, string type, string blok)
         {
-            cursussen cursussenDb = new cursussen(connString);
-            var filtered = cursussenDb.GetDataByFilter(status, type, blok);
+            var cursussenDb = new Cursussen(connString);
+            var filtered = cursussenDb.GetCursussen(status, type, blok);
 
-            bs.DataSource = new BindingList<Cursus>(filtered);
+            var gridData = new List<object>();
+
+            if (filtered.Count > 0)
+            {
+                foreach (var c in filtered)
+                {
+                    gridData.Add(new
+                    {
+                        c.Cursus_ID,
+                        c.Cursus_Naam,
+                        c.Datum,
+                        c.Studie_Punten,
+                        Blok_Naam = GetBlokName(c.Studie_Blok),
+                        Cursus_Status = StatusIdToSymbol(c.Cursus_Status),
+                        Cursus_TypeNaam = TypeIdToName(c.Cursus_Type)
+                    });
+                }
+            }
+            else
+            {
+                // No courses found, add a placeholder row
+                gridData.Add(new
+                {
+                    Cursus_ID = 0,
+                    Cursus_Naam = "Geen cursus / examen gevonden",
+                    Datum = DateTime.MinValue,
+                    Studie_Punten = 0,
+                    Blok_Naam = "-",
+                    Cursus_Status = "-",
+                    Cursus_TypeNaam = "-"
+                });
+            }
+
+            bs.DataSource = gridData;
             dGrid.DataSource = bs;
 
-            // get totals for ALL courses (not filtered)
+            // Totals for progress bars remain unchanged
             var totals = cursussenDb.GetStudiepuntenTotalsAll();
 
-            // Update labels
-            plabelSubjectief.Text = $"{totals.EarnedSummatief} / {totals.MaxSummatief}";
-            pLabelobjectief.Text = $"{totals.EarnedFormatief} / {totals.MaxFormatief}";
+            plabelSubjectief.Text = string.Format("{0} / {1}", totals.EarnedSummatief, totals.MaxSummatief);
+            pLabelobjectief.Text = string.Format("{0} / {1}", totals.EarnedFormatief, totals.MaxFormatief);
 
-            // Update progress bars
-            if (totals.MaxSummatief > 0)
-            {
-                pBarSummatief.Maximum = totals.MaxSummatief;
-                pBarSummatief.Value = Math.Min(totals.EarnedSummatief, totals.MaxSummatief);
-            }
-            else
-            {
-                pBarSummatief.Maximum = 1; // avoid zero-division errors
-                pBarSummatief.Value = 0;
-            }
+            pBarSummatief.Maximum = totals.MaxSummatief > 0 ? totals.MaxSummatief : 1;
+            pBarSummatief.Value = Math.Min(totals.EarnedSummatief, pBarSummatief.Maximum);
 
-            if (totals.MaxFormatief > 0)
+            pBarFormatief.Maximum = totals.MaxFormatief > 0 ? totals.MaxFormatief : 1;
+            pBarFormatief.Value = Math.Min(totals.EarnedFormatief, pBarFormatief.Maximum);
+        }
+
+
+        // Map status ID -> symbol
+        private string StatusIdToSymbol(int id)
+        {
+            switch (id)
             {
-                pBarFormatief.Maximum = totals.MaxFormatief;
-                pBarFormatief.Value = Math.Min(totals.EarnedFormatief, totals.MaxFormatief);
-            }
-            else
-            {
-                pBarFormatief.Maximum = 1;
-                pBarFormatief.Value = 0;
+                case 1: return "-";
+                case 2: return "J";
+                case 3: return "N";
+                default: return "?";
             }
         }
 
+        // Map type ID -> name
+        private string TypeIdToName(int id)
+        {
+            switch (id)
+            {
+                case 1: return "Formatief";
+                case 2: return "Summatief";
+                default: return "Onbekend";
+            }
+        }
+
+        // Get blok name from cached dictionary
+        private string GetBlokName(int blokId)
+        {
+            if (blokCache != null && blokCache.ContainsKey(blokId))
+                return blokCache[blokId];
+            return "Onbekend";
+        }
     }
 }

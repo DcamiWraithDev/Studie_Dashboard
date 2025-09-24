@@ -95,8 +95,11 @@
   <ItemGroup>
     <Compile Include="Class1.cs" />
     <Compile Include="Data\cursussen.cs" />
+    <Compile Include="Models\Blok.cs" />
     <Compile Include="Models\Cursus.cs" />
+    <Compile Include="Models\Status.cs" />
     <Compile Include="Models\StudiePuntenTotals.cs" />
+    <Compile Include="Models\Type.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

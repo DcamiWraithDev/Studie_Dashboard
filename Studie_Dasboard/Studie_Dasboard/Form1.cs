@@ -35,7 +35,7 @@ namespace Studie_Dasboard
 
             foreach (Cursus f in alle_curssusen)
             {
-                Console.WriteLine(f.Cursus_Naam);
+                Console.WriteLine($"({f.Cursus_Status}) {f.Cursus_Naam} ({f.Blok_Naam}) {f.Cursus_Type}");
             }
         }
     }

@@ -11,9 +11,12 @@ namespace Database.Models
         public int Cursus_ID { get; set; }
         public string Cursus_Naam { get; set; }
         public DateTime Datum { get; set; }
+        public int Studie_Punten {  get; set; }
         public string Blok_Naam { get; set; }
         public string Cursus_Status { get; set; }
-        public string Cursus_Type { get; set; }
+        public int Cursus_Type { get; set; }
+        public string Cursus_TypeNaam { get; set; }
+
     }
 
 }

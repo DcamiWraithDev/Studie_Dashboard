@@ -96,6 +96,7 @@
     <Compile Include="Class1.cs" />
     <Compile Include="Data\cursussen.cs" />
     <Compile Include="Models\Cursus.cs" />
+    <Compile Include="Models\StudiePuntenTotals.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

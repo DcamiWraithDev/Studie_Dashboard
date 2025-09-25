@@ -55,6 +55,10 @@
             // 
             // dGrid
             // 
+            this.dGrid.AllowUserToAddRows = false;
+            this.dGrid.AllowUserToDeleteRows = false;
+            this.dGrid.AllowUserToResizeColumns = false;
+            this.dGrid.AllowUserToResizeRows = false;
             this.dGrid.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
             this.dGrid.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
             this.dGrid.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
@@ -88,6 +92,7 @@
             // 
             this.pBarFormatief.Location = new System.Drawing.Point(901, 8);
             this.pBarFormatief.Name = "pBarFormatief";
+            this.pBarFormatief.RightToLeft = System.Windows.Forms.RightToLeft.No;
             this.pBarFormatief.Size = new System.Drawing.Size(100, 23);
             this.pBarFormatief.TabIndex = 4;
             this.pBarFormatief.Value = 10;
@@ -184,7 +189,7 @@
             this.Controls.Add(this.dGrid);
             this.Controls.Add(this.cBox);
             this.Name = "Form1";
-            this.Text = "Form1";
+            this.Text = "Ossiris but scuffed";
             this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
             this.Load += new System.EventHandler(this.Form1_Load);
             ((System.ComponentModel.ISupportInitialize)(this.dGrid)).EndInit();
